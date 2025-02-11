@@ -2,7 +2,8 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Download, Filter, SortAsc } from "lucide-react";
+import { Download, Filter, SortAsc, FileText } from "lucide-react";
+import { ExcelViewer } from "./ExcelViewer";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,31 +11,57 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+interface FileItem {
+  name: string;
+  size: string;
+  uploadDate: string;
+}
+
 interface ReportViewerProps {
-  reportTitle?: string;
-  reportData?: any;
+  files?: FileItem[];
   isLoading?: boolean;
 }
 
-const ReportViewer = ({
-  reportTitle = "Sample Financial Report",
-  reportData = {
-    columns: ["Date", "Department", "Amount", "Status"],
-    rows: [
-      ["2024-03-01", "Sales", "$5,000", "Completed"],
-      ["2024-03-02", "Marketing", "$3,500", "Pending"],
-      ["2024-03-03", "Finance", "$7,200", "Completed"],
-    ],
-  },
-  isLoading = false,
-}: ReportViewerProps) => {
+interface ExcelViewerState {
+  selectedFile: string | null;
+}
+
+const downloadFile = (data: any, filename: string, type: string) => {
+  // For demo purposes, we'll create a simple CSV/PDF-like content
+  let content = "";
+
+  if (type === "csv" || type === "xlsx") {
+    // Create CSV content
+    content = data.columns.join(",") + "\n";
+    data.rows.forEach((row: string[]) => {
+      content += row.join(",") + "\n";
+    });
+  } else if (type === "pdf") {
+    // Create a simple text representation for PDF
+    content = data.columns.join("\t") + "\n";
+    data.rows.forEach((row: string[]) => {
+      content += row.join("\t") + "\n";
+    });
+  }
+
+  const blob = new Blob([content], { type: "text/plain" });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${filename}.${type}`;
+  a.click();
+  window.URL.revokeObjectURL(url);
+};
+
+const ReportViewer = ({ files = [], isLoading = false }: ReportViewerProps) => {
+  const [selectedFile, setSelectedFile] = React.useState<string | null>(null);
   return (
     <div className="h-full w-full bg-background p-4">
       <Card className="h-full">
         <div className="p-4">
           {/* Report Header */}
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-semibold">{reportTitle}</h2>
+            <h2 className="text-2xl font-semibold">Files</h2>
             <div className="flex gap-2">
               {/* Filter Button */}
               <DropdownMenu>
@@ -73,58 +100,104 @@ const ReportViewer = ({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  <DropdownMenuItem>Export as PDF</DropdownMenuItem>
-                  <DropdownMenuItem>Export as Excel</DropdownMenuItem>
-                  <DropdownMenuItem>Export as CSV</DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      downloadFile({ columns: [], rows: [] }, "report", "pdf")
+                    }
+                  >
+                    Export as PDF
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      downloadFile({ columns: [], rows: [] }, "report", "xlsx")
+                    }
+                  >
+                    Export as Excel
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      downloadFile({ columns: [], rows: [] }, "report", "csv")
+                    }
+                  >
+                    Export as CSV
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
           </div>
 
-          {/* Report Content */}
-          <Tabs defaultValue="table" className="w-full">
-            <TabsList>
-              <TabsTrigger value="table">Table View</TabsTrigger>
-              <TabsTrigger value="chart">Chart View</TabsTrigger>
-            </TabsList>
+          {/* File List */}
+          <div className="rounded-md border mb-4">
+            <table className="w-full">
+              <thead className="bg-muted/50">
+                <tr>
+                  <th className="p-2 text-left font-medium">Name</th>
+                  <th className="p-2 text-left font-medium">Size</th>
+                  <th className="p-2 text-left font-medium">Upload Date</th>
+                  <th className="p-2 text-left font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {files.map((file, index) => (
+                  <tr key={index} className="border-t">
+                    <td
+                      className="p-2 cursor-pointer hover:text-primary"
+                      onClick={() => setSelectedFile(file.name)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4" />
+                        {file.name}
+                      </div>
+                    </td>
+                    <td className="p-2">{file.size}</td>
+                    <td className="p-2">{file.uploadDate}</td>
+                    <td className="p-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() =>
+                          downloadFile(
+                            { columns: [], rows: [] },
+                            file.name,
+                            "xlsx",
+                          )
+                        }
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+                {files.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={4}
+                      className="p-4 text-center text-muted-foreground"
+                    >
+                      No files in this folder
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
 
-            <TabsContent value="table" className="mt-4">
-              <div className="rounded-md border">
-                <table className="w-full">
-                  <thead className="bg-muted/50">
-                    <tr>
-                      {reportData.columns.map(
-                        (column: string, index: number) => (
-                          <th key={index} className="p-2 text-left font-medium">
-                            {column}
-                          </th>
-                        ),
-                      )}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {reportData.rows.map((row: string[], index: number) => (
-                      <tr key={index} className="border-t">
-                        {row.map((cell: string, cellIndex: number) => (
-                          <td key={cellIndex} className="p-2">
-                            {cell}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+          {/* Excel Content Viewer */}
+          {selectedFile && (
+            <div className="border rounded-md p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium">{selectedFile}</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedFile(null)}
+                >
+                  Close
+                </Button>
               </div>
-            </TabsContent>
-
-            <TabsContent value="chart" className="mt-4">
-              <div className="h-[400px] flex items-center justify-center border rounded-md">
-                <p className="text-muted-foreground">
-                  Chart view coming soon...
-                </p>
-              </div>
-            </TabsContent>
-          </Tabs>
+              <ExcelViewer fileName={selectedFile} />
+            </div>
+          )}
         </div>
       </Card>
     </div>

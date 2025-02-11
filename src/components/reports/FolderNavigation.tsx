@@ -1,5 +1,12 @@
 import React from "react";
-import { ChevronDown, ChevronRight, Folder } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  Folder,
+  Home,
+  Settings,
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -16,6 +23,7 @@ interface FolderItem {
 
 interface FolderNavigationProps {
   folders?: FolderItem[];
+  selectedFolderId?: string;
   onFolderSelect?: (folderId: string) => void;
 }
 
@@ -48,12 +56,14 @@ const defaultFolders: FolderItem[] = [
 
 const FolderTreeItem = ({
   item,
+  selectedId,
   onSelect,
 }: {
   item: FolderItem;
+  selectedId?: string;
   onSelect?: (id: string) => void;
 }) => {
-  const [isOpen, setIsOpen] = React.useState(false);
+  const [isOpen, setIsOpen] = React.useState(item.id === selectedId);
   const hasChildren = item.children && item.children.length > 0;
 
   return (
@@ -75,7 +85,7 @@ const FolderTreeItem = ({
           )}
           <Button
             variant="ghost"
-            className="h-8 justify-start gap-2 px-2 hover:bg-accent"
+            className={`h-8 justify-start gap-2 px-2 hover:bg-accent ${item.id === selectedId ? "bg-accent" : ""}`}
             onClick={() => onSelect?.(item.id)}
           >
             <Folder className="h-4 w-4" />
@@ -102,16 +112,37 @@ const FolderTreeItem = ({
 
 const FolderNavigation = ({
   folders = defaultFolders,
+  selectedFolderId,
   onFolderSelect,
 }: FolderNavigationProps) => {
+  const navigate = useNavigate();
   return (
     <div className="h-full w-[280px] border-r bg-background">
-      <ScrollArea className="h-full">
+      <div className="p-4 border-b space-y-2">
+        <Button
+          variant="ghost"
+          className="w-full justify-start gap-2"
+          onClick={() => navigate("/")}
+        >
+          <Home className="h-4 w-4" />
+          <span>Home</span>
+        </Button>
+        <Button
+          variant="ghost"
+          className="w-full justify-start gap-2"
+          onClick={() => navigate("/manage")}
+        >
+          <Settings className="h-4 w-4" />
+          <span>Manage</span>
+        </Button>
+      </div>
+      <ScrollArea className="h-[calc(100%-64px)]">
         <div className="p-4">
           {folders.map((folder) => (
             <FolderTreeItem
               key={folder.id}
               item={folder}
+              selectedId={selectedFolderId}
               onSelect={onFolderSelect}
             />
           ))}

@@ -32,6 +32,14 @@ const Home = ({
   onProfileClick = () => {},
   onLogout = () => {},
 }: HomeProps) => {
+  const [currentFolderId, setCurrentFolderId] =
+    React.useState(selectedFolderId);
+
+  const handleFolderSelect = (folderId: string) => {
+    setCurrentFolderId(folderId);
+    onFolderSelect(folderId);
+  };
+
   return (
     <div className="flex h-screen w-full flex-col bg-background">
       <TopNavBar
@@ -45,8 +53,8 @@ const Home = ({
       <Breadcrumbs items={breadcrumbItems} onNavigate={onBreadcrumbNavigate} />
       <div className="flex-1 overflow-hidden">
         <ReportExplorer
-          selectedFolderId={selectedFolderId}
-          onFolderSelect={onFolderSelect}
+          selectedFolderId={currentFolderId}
+          onFolderSelect={handleFolderSelect}
         />
       </div>
     </div>
